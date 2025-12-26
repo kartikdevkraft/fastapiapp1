@@ -1,6 +1,11 @@
-from collections.abc import AsyncGenerator
-import uuid
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-from sqlalchemy import Column, Text,String, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+# Format: postgresql://[user]:[password]@[host]:[port]/[db_name]
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:password@localhost:5432/db1"
 
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base() # All your models will inherit from this
