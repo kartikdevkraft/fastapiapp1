@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from . import models, schemas
+from . import models, schemas, db
 from .db import SessionLocal, engine
+from src.schemas import PostCreate, PostResponse, PostUpdate # Add PostUpdate to imports
 
 # This line creates the tables in Postgres if they don't exist
 models.Base.metadata.create_all(bind=engine)
@@ -73,3 +74,22 @@ def delete_post(post_id: int, db: Session = Depends(get_db)):
 
     # In DELETE, we usually return No Content (204)
     return None
+
+
+@app.patch("/posts/{post_id}", response_model=schemas.PostResponse)
+def patch_post(post_id: int, post_update: schemas.PostUpdate, database: Session = Depends(get_db)):
+    # 1. Fetch the post from DB
+    db_post = database.query(models.Post).filter(models.Post.id == post_id).first()
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # 2. Extract only the fields sent in the request
+    update_data = post_update.model_dump(exclude_unset=True)
+
+    # 3. Apply changes to the DB object
+    for key, value in update_data.items():
+        setattr(db_post, key, value)
+
+    database.commit()
+    database.refresh(db_post)
+    return db_post
